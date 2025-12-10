@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Package } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { user, loading } = useAuth();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-card/80 backdrop-blur-lg border-b border-border">
@@ -28,19 +30,36 @@ const Navbar = () => {
             <Link to="/search" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
               Browse
             </Link>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
-              Dashboard
-            </Link>
+            {user && (
+              <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors font-medium">
+                Dashboard
+              </Link>
+            )}
           </div>
 
           {/* CTA Buttons */}
           <div className="hidden md:flex items-center gap-3">
-            <Button variant="ghost" asChild>
-              <Link to="/dashboard">Log In</Link>
-            </Button>
-            <Button variant="hero" asChild>
-              <Link to="/add-item">List Your Item</Link>
-            </Button>
+            {!loading && (
+              user ? (
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link to="/dashboard">Dashboard</Link>
+                  </Button>
+                  <Button variant="hero" asChild>
+                    <Link to="/add-item">List Your Item</Link>
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="ghost" asChild>
+                    <Link to="/auth">Log In</Link>
+                  </Button>
+                  <Button variant="hero" asChild>
+                    <Link to="/auth">Get Started</Link>
+                  </Button>
+                </>
+              )
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -62,16 +81,31 @@ const Navbar = () => {
               <Link to="/search" className="text-foreground font-medium py-2" onClick={() => setIsOpen(false)}>
                 Browse
               </Link>
-              <Link to="/dashboard" className="text-foreground font-medium py-2" onClick={() => setIsOpen(false)}>
-                Dashboard
-              </Link>
+              {user && (
+                <Link to="/dashboard" className="text-foreground font-medium py-2" onClick={() => setIsOpen(false)}>
+                  Dashboard
+                </Link>
+              )}
               <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                <Button variant="outline" asChild>
-                  <Link to="/dashboard" onClick={() => setIsOpen(false)}>Log In</Link>
-                </Button>
-                <Button variant="hero" asChild>
-                  <Link to="/add-item" onClick={() => setIsOpen(false)}>List Your Item</Link>
-                </Button>
+                {user ? (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/dashboard" onClick={() => setIsOpen(false)}>Dashboard</Link>
+                    </Button>
+                    <Button variant="hero" asChild>
+                      <Link to="/add-item" onClick={() => setIsOpen(false)}>List Your Item</Link>
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button variant="outline" asChild>
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Log In</Link>
+                    </Button>
+                    <Button variant="hero" asChild>
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>Get Started</Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           </div>
