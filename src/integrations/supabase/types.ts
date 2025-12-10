@@ -95,6 +95,56 @@ export type Database = {
         }
         Relationships: []
       }
+      rental_requests: {
+        Row: {
+          created_at: string
+          end_date: string
+          id: string
+          item_id: string
+          message: string | null
+          owner_id: string
+          renter_id: string
+          start_date: string
+          status: string
+          total_price: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_date: string
+          id?: string
+          item_id: string
+          message?: string | null
+          owner_id: string
+          renter_id: string
+          start_date: string
+          status?: string
+          total_price: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_date?: string
+          id?: string
+          item_id?: string
+          message?: string | null
+          owner_id?: string
+          renter_id?: string
+          start_date?: string
+          status?: string
+          total_price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rental_requests_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
