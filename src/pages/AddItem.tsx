@@ -1,13 +1,19 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Upload, MapPin, IndianRupee, Tag, ImagePlus, X, Check } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
+import { Upload, MapPin, IndianRupee, Tag, ImagePlus, X, Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 
 const AddItem = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [images, setImages] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     title: "",
@@ -19,23 +25,23 @@ const AddItem = () => {
 
   const categories = [
     "Electronics",
-    "Tools & Equipment",
-    "Cameras & Photography",
-    "Musical Instruments",
-    "Sports & Outdoors",
-    "Party & Events",
-    "Travel Gear",
-    "Kitchen Appliances",
-    "Costumes & Clothing",
-    "Gaming",
+    "Tools",
+    "Travel",
+    "Kitchen",
+    "Sports",
+    "Music",
     "Other",
   ];
 
   const handleImageAdd = () => {
-    // Simulate adding an image
-    const mockImages = ["📷", "🔧", "🎸", "📽️", "⛺", "🎮"];
+    // For now, using placeholder images
+    const placeholderImages = [
+      "https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&h=300&fit=crop",
+      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop",
+    ];
     if (images.length < 5) {
-      setImages([...images, mockImages[images.length]]);
+      setImages([...images, placeholderImages[images.length % placeholderImages.length]]);
     }
   };
 
@@ -43,12 +49,40 @@ const AddItem = () => {
     setImages(images.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Item Listed Successfully! 🎉",
-      description: "Your item is now visible to nearby renters.",
+    
+    if (!user) {
+      toast.error("Please sign in to add items");
+      return;
+    }
+
+    if (!formData.title || !formData.category || !formData.price) {
+      toast.error("Please fill in all required fields");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    const { error } = await supabase.from("items").insert({
+      user_id: user.id,
+      title: formData.title,
+      description: formData.description || null,
+      category: formData.category.toLowerCase(),
+      price_per_day: parseFloat(formData.price),
+      images: images,
+      location: formData.location || null,
+      is_available: true,
     });
+
+    if (error) {
+      toast.error("Failed to add item: " + error.message);
+    } else {
+      toast.success("Item listed successfully!");
+      navigate("/dashboard/items");
+    }
+
+    setIsSubmitting(false);
   };
 
   return (
@@ -72,8 +106,8 @@ const AddItem = () => {
             
             <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
               {images.map((img, index) => (
-                <div key={index} className="relative aspect-square rounded-xl bg-secondary flex items-center justify-center text-4xl border-2 border-border">
-                  {img}
+                <div key={index} className="relative aspect-square rounded-xl bg-secondary overflow-hidden border-2 border-border">
+                  <img src={img} alt={`Item ${index + 1}`} className="w-full h-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImage(index)}
@@ -105,7 +139,7 @@ const AddItem = () => {
           <div className="bg-card rounded-2xl p-6 shadow-card border border-border space-y-6">
             <div>
               <Label htmlFor="title" className="text-foreground font-medium mb-2 block">
-                Item Title
+                Item Title *
               </Label>
               <Input
                 id="title"
@@ -113,6 +147,7 @@ const AddItem = () => {
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="h-12"
+                required
               />
             </div>
 
@@ -131,7 +166,7 @@ const AddItem = () => {
 
             <div>
               <Label className="text-foreground font-medium mb-3 block">
-                Category
+                Category *
               </Label>
               <div className="flex flex-wrap gap-2">
                 {categories.map((cat) => (
@@ -157,7 +192,7 @@ const AddItem = () => {
             <div className="grid sm:grid-cols-2 gap-6">
               <div>
                 <Label htmlFor="price" className="text-foreground font-medium mb-2 block">
-                  Price per Day
+                  Price per Day *
                 </Label>
                 <div className="relative">
                   <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -168,6 +203,8 @@ const AddItem = () => {
                     value={formData.price}
                     onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                     className="h-12 pl-12"
+                    required
+                    min="1"
                   />
                 </div>
               </div>
@@ -210,12 +247,27 @@ const AddItem = () => {
 
           {/* Submit */}
           <div className="flex flex-col sm:flex-row gap-4">
-            <Button type="submit" variant="hero" size="lg" className="flex-1">
-              <Upload className="w-5 h-5" />
-              Publish Item
+            <Button 
+              type="submit" 
+              variant="hero" 
+              size="lg" 
+              className="flex-1"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-5 h-5" />
+                  Publish Item
+                </>
+              )}
             </Button>
-            <Button type="button" variant="outline" size="lg">
-              Save as Draft
+            <Button type="button" variant="outline" size="lg" onClick={() => navigate(-1)}>
+              Cancel
             </Button>
           </div>
         </form>

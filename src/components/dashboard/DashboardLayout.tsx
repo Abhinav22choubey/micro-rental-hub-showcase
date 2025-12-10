@@ -1,5 +1,6 @@
 import { ReactNode, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Package, 
   LayoutDashboard, 
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -23,6 +25,8 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, profile, signOut } = useAuth();
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
@@ -34,6 +38,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   ];
 
   const isActive = (href: string) => location.pathname === href;
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success("Signed out successfully");
+    navigate("/");
+  };
+
+  const displayName = profile?.display_name || user?.email?.split("@")[0] || "User";
+  const initials = displayName.slice(0, 2).toUpperCase();
+  const trustScore = profile?.trust_score || 0;
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,11 +129,14 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
                 <div>
                   <p className="font-semibold text-foreground text-sm">Trust Score</p>
-                  <p className="text-accent font-bold">85 / 100</p>
+                  <p className="text-accent font-bold">{trustScore} / 100</p>
                 </div>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full w-[85%] gradient-accent rounded-full" />
+                <div 
+                  className="h-full gradient-accent rounded-full transition-all" 
+                  style={{ width: `${trustScore}%` }}
+                />
               </div>
             </div>
           </div>
@@ -128,13 +145,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="p-4 border-t border-border">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold">
-                RS
+                {initials}
               </div>
-              <div className="flex-1">
-                <p className="font-semibold text-foreground text-sm">Rahul Sharma</p>
-                <p className="text-xs text-muted-foreground">rahul@example.com</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-foreground text-sm truncate">{displayName}</p>
+                <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               </div>
-              <button className="p-2 text-muted-foreground hover:text-destructive transition-colors">
+              <button 
+                onClick={handleSignOut}
+                className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+              >
                 <LogOut className="w-5 h-5" />
               </button>
             </div>
