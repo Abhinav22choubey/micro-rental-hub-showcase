@@ -13,6 +13,7 @@ import AddItem from "./pages/AddItem";
 import Search from "./pages/Search";
 import Chat from "./pages/Chat";
 import RentalRequests from "./pages/RentalRequests";
+import ItemDetail from "./pages/ItemDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
             <Route path="/dashboard/requests" element={<ProtectedRoute><RentalRequests /></ProtectedRoute>} />
             <Route path="/add-item" element={<ProtectedRoute><AddItem /></ProtectedRoute>} />
             <Route path="/search" element={<Search />} />
+            <Route path="/item/:id" element={<ItemDetail />} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

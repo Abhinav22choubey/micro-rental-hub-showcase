@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Navbar from "@/components/landing/Navbar";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,13 +9,51 @@ import {
   SlidersHorizontal, 
   Star, 
   Heart,
-  X 
+  X,
+  Loader2
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface Item {
+  id: string;
+  title: string;
+  price_per_day: number;
+  images: string[] | null;
+  location: string | null;
+  is_available: boolean | null;
+  category: string;
+}
 
 const Search = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [items, setItems] = useState<Item[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchItems();
+  }, [selectedCategory]);
+
+  const fetchItems = async () => {
+    setLoading(true);
+    try {
+      let query = supabase.from("items").select("*").eq("is_available", true);
+      
+      if (selectedCategory) {
+        query = query.eq("category", selectedCategory);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
+      
+      if (error) throw error;
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const categories = [
     { id: "electronics", label: "Electronics", emoji: "💻" },
@@ -27,74 +66,65 @@ const Search = () => {
     { id: "kitchen", label: "Kitchen", emoji: "🍳" },
   ];
 
-  const items = [
+  // Static items for demo when no database items exist
+  const demoItems = [
     {
-      id: 1,
+      id: "demo-1",
       title: "Canon EOS 1500D DSLR Camera",
-      price: 500,
-      image: "📷",
-      distance: "2.1 km",
-      rating: 4.8,
-      reviews: 23,
-      owner: "Priya S.",
-      available: true,
+      price_per_day: 500,
+      images: ["https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=400"],
+      location: "2.1 km away",
+      is_available: true,
+      category: "cameras",
     },
     {
-      id: 2,
+      id: "demo-2",
       title: "Bosch Power Drill Kit",
-      price: 150,
-      image: "🔧",
-      distance: "0.8 km",
-      rating: 4.9,
-      reviews: 45,
-      owner: "Amit K.",
-      available: true,
+      price_per_day: 150,
+      images: ["https://images.unsplash.com/photo-1504148455328-c376907d081c?w=400"],
+      location: "0.8 km away",
+      is_available: true,
+      category: "tools",
     },
     {
-      id: 3,
+      id: "demo-3",
       title: "Yamaha Acoustic Guitar",
-      price: 200,
-      image: "🎸",
-      distance: "1.5 km",
-      rating: 4.7,
-      reviews: 18,
-      owner: "Rahul V.",
-      available: true,
+      price_per_day: 200,
+      images: ["https://images.unsplash.com/photo-1510915361894-db8b60106cb1?w=400"],
+      location: "1.5 km away",
+      is_available: true,
+      category: "music",
     },
     {
-      id: 4,
+      id: "demo-4",
       title: "Epson HD Projector",
-      price: 400,
-      image: "📽️",
-      distance: "3.2 km",
-      rating: 4.6,
-      reviews: 31,
-      owner: "Sneha R.",
-      available: false,
+      price_per_day: 400,
+      images: ["https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400"],
+      location: "3.2 km away",
+      is_available: false,
+      category: "electronics",
     },
     {
-      id: 5,
+      id: "demo-5",
       title: "Coleman Camping Tent (4P)",
-      price: 300,
-      image: "⛺",
-      distance: "1.8 km",
-      rating: 4.9,
-      reviews: 27,
-      owner: "Vikram M.",
-      available: true,
+      price_per_day: 300,
+      images: ["https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=400"],
+      location: "1.8 km away",
+      is_available: true,
+      category: "travel",
     },
     {
-      id: 6,
+      id: "demo-6",
       title: "PS5 Console with Controllers",
-      price: 600,
-      image: "🎮",
-      distance: "2.5 km",
-      rating: 5.0,
-      reviews: 12,
-      owner: "Arjun P.",
-      available: true,
+      price_per_day: 600,
+      images: ["https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400"],
+      location: "2.5 km away",
+      is_available: true,
+      category: "electronics",
     },
   ];
+
+  const displayItems = items.length > 0 ? items : demoItems;
 
   return (
     <div className="min-h-screen bg-background">
@@ -198,7 +228,7 @@ const Search = () => {
           {/* Results */}
           <div className="mb-4 flex items-center justify-between">
             <p className="text-muted-foreground">
-              <span className="font-semibold text-foreground">{items.length}</span> items found near you
+              <span className="font-semibold text-foreground">{displayItems.length}</span> items found near you
             </p>
             <select className="h-9 rounded-lg border border-input bg-background px-3 text-sm">
               <option>Sort by: Nearest</option>
@@ -207,64 +237,78 @@ const Search = () => {
             </select>
           </div>
 
+          {/* Loading */}
+          {loading && (
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
+
           {/* Items Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className="bg-card rounded-2xl overflow-hidden shadow-card border border-border card-hover group"
-              >
-                {/* Image */}
-                <div className="relative aspect-[4/3] bg-secondary flex items-center justify-center">
-                  <span className="text-6xl">{item.image}</span>
-                  <button className="absolute top-4 right-4 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
-                    <Heart className="w-5 h-5" />
-                  </button>
-                  {!item.available && (
-                    <div className="absolute inset-0 bg-foreground/60 flex items-center justify-center">
-                      <span className="px-4 py-2 bg-card rounded-full text-sm font-semibold text-foreground">
-                        Currently Rented
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="p-5">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
-                      {item.title}
-                    </h3>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
-                    <MapPin className="w-4 h-4" />
-                    {item.distance}
-                    <span className="mx-1">•</span>
-                    <Star className="w-4 h-4 text-primary fill-primary" />
-                    {item.rating} ({item.reviews})
+          {!loading && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayItems.map((item) => (
+                <Link
+                  to={item.id.startsWith("demo-") ? "#" : `/item/${item.id}`}
+                  key={item.id}
+                  className="bg-card rounded-2xl overflow-hidden shadow-card border border-border card-hover group block"
+                >
+                  {/* Image */}
+                  <div className="relative aspect-[4/3] bg-secondary">
+                    {item.images?.[0] ? (
+                      <img 
+                        src={item.images[0]} 
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-6xl">📦</div>
+                    )}
+                    <button 
+                      className="absolute top-4 right-4 w-10 h-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+                      onClick={(e) => e.preventDefault()}
+                    >
+                      <Heart className="w-5 h-5" />
+                    </button>
+                    {!item.is_available && (
+                      <div className="absolute inset-0 bg-foreground/60 flex items-center justify-center">
+                        <span className="px-4 py-2 bg-card rounded-full text-sm font-semibold text-foreground">
+                          Currently Rented
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-2xl font-bold text-foreground">₹{item.price}</span>
-                      <span className="text-muted-foreground">/day</span>
+                  {/* Content */}
+                  <div className="p-5">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+                        {item.title}
+                      </h3>
                     </div>
-                    <Button variant="default" size="sm" disabled={!item.available}>
-                      {item.available ? "Request" : "Unavailable"}
-                    </Button>
-                  </div>
+                    
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3">
+                      <MapPin className="w-4 h-4" />
+                      {item.location || "Nearby"}
+                      <span className="mx-1">•</span>
+                      <Star className="w-4 h-4 text-primary fill-primary" />
+                      4.8 (23)
+                    </div>
 
-                  <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                      {item.owner.charAt(0)}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-2xl font-bold text-foreground">₹{item.price_per_day}</span>
+                        <span className="text-muted-foreground">/day</span>
+                      </div>
+                      <Button variant="default" size="sm" disabled={!item.is_available}>
+                        {item.is_available ? "Request" : "Unavailable"}
+                      </Button>
                     </div>
-                    <span className="text-sm text-muted-foreground">{item.owner}</span>
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </main>
     </div>
