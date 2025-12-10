@@ -40,8 +40,10 @@ const Hero = () => {
 
           {/* Headline */}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-foreground leading-tight mb-6 animate-fade-up stagger-1">
-            Rent Anything.{" "}
-            <span className="text-gradient">Lend Anything.</span>
+            Rent Anything.{" "} <br />
+            <span className="bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+  Lend Anything.
+</span>
             <br />
             <span className="text-primary">Earn Every Day.</span>
           </h1>
